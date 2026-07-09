@@ -9,3 +9,4 @@ export * from "./query/build";
 export * from "./auth/token";
 export * from "./repo/apis";
 export * from "./repo/records";
+export * from "./ingest/pipeline";
