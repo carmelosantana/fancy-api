@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { getDb, ensureSchema, type Db } from "../db/client";
 import { ingest } from "../ingest/pipeline";
-import { getApiBySlug, getCollection } from "../repo/apis";
+import { getApiBySlug, getCollection, updateApi } from "../repo/apis";
 import { parseQuery } from "../query/params";
 import { runQuery } from "../query/build";
 import { exportApi } from "./export";
@@ -99,6 +99,25 @@ describe("spec export/import round-trip", () => {
     const spec = await exportApi(db, "quotes-api");
 
     await expect(importApi(db, spec)).rejects.toThrow();
+  });
+
+  test("exportApi never includes a readKey configured on the api, even when it lives in config", async () => {
+    const db = await freshDb();
+    await ingest(db, { apiSlug: "quotes-api", rows: quoteRows.slice(0, 1) });
+    // The public read gate (apps/web/lib/publicApi.ts) accepts a read key
+    // stored either on the dedicated `read_key` column or at
+    // `config.readKey` — exercise both to make sure neither leaks.
+    await updateApi(db, "quotes-api", {
+      readKey: "super-secret-read-key",
+      config: { readKey: "also-super-secret" },
+    });
+
+    const spec = await exportApi(db, "quotes-api");
+
+    expect(spec).not.toHaveProperty("readKey");
+    expect(spec.config).not.toHaveProperty("readKey");
+    expect(JSON.stringify(spec)).not.toContain("super-secret-read-key");
+    expect(JSON.stringify(spec)).not.toContain("also-super-secret");
   });
 
   test("parseSpec rejects malformed / garbage input", () => {
