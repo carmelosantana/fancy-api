@@ -7,3 +7,5 @@ export * from "./ingest/parse";
 export * from "./query/params";
 export * from "./query/build";
 export * from "./auth/token";
+export * from "./repo/apis";
+export * from "./repo/records";
