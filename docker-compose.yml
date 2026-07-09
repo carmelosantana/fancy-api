@@ -1,0 +1,43 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fancy:latest
+    ports:
+      - "3000:3000"
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      DATABASE_PATH: /data/app.db
+      SEED_ON_START: ${SEED_ON_START:-1}
+    volumes:
+      - fancy-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # --- Postgres (roadmap, not yet supported by the engine) ---
+  # Fancy's query layer (packages/core) is built directly on SQLite's
+  # `json_extract` and only knows how to talk to a libsql/sqlite file today.
+  # A Postgres-backed `web` is planned (see docs/superpowers/specs/) but the
+  # storage/query code isn't wired for it yet, so this service is left here
+  # commented out as a preview of the intended shape, not something you can
+  # switch on by uncommenting it.
+  #
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: fancy
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+  #     POSTGRES_DB: fancy
+  #   volumes:
+  #     - fancy-postgres-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+volumes:
+  fancy-data:
+  # fancy-postgres-data:
