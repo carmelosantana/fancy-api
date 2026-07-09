@@ -5,9 +5,10 @@ services:
       dockerfile: Dockerfile
     image: fancy:latest
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-3000}:3000"
     environment:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      SESSION_SECRET: ${SESSION_SECRET:-}
       DATABASE_PATH: /data/app.db
       SEED_ON_START: ${SEED_ON_START:-1}
     volumes:

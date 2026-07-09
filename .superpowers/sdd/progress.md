@@ -11,5 +11,13 @@ Toolchain note: Node 26 → use @libsql/client + drizzle-orm/libsql (no native b
 - Tasks 9-11 (web backend/auth/read API/MCP): complete (fe68122..16b1bdd, smoke-tested)
 - Task 12 (builder UI "Fancy"): complete (79043ea..2a3b010, build+smoke green)
 - Tasks 13-14 (seed + Playwright): complete (69 unit tests green, 8/8 Playwright green) — see task-13-14-report.md
-- Task 15 (Docker/Makefile/README): pending
-- Task 16 (launch + BigBucket): pending
+- Task 15 (Docker ran+healthy, Makefile, README, LICENSE): complete (c7a3b41..5d3243f)
+- Task 16 (launch + BigBucket): complete (live on :3456, autostart=on, curl matrix green)
+
+## Final review findings
+- C1 session cookie forgeable/no-secret/no-expiry — FIX
+- I1 openapi route missing readKey gate — FIX
+- I2 exportApi leaks readKey — FIX
+- I3 cookie missing Secure — FIX
+- Minors (cheap): reserved-slug on import, apiSlug validation, list_records cap, const-time pw compare — FIX
+- Clean: SQLi/query safety, mgmt authz, write-token enforcement, envelope, CORS
