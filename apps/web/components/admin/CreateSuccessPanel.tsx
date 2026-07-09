@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CodeBlock } from "@/components/ui/CodeBlock";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { JsonView } from "@/components/ui/JsonView";
-import { McpConfigSnippet } from "@/components/McpConfigSnippet";
+import { TokenRevealCard } from "@/components/admin/TokenRevealCard";
 
 export type CreateResult =
   | {
@@ -91,24 +90,7 @@ export function CreateSuccessPanel({ result }: { result: CreateResult }) {
       ) : null}
 
       {result.kind === "create" && result.writeToken ? (
-        <div className="card border-amber-400/30 bg-amber-400/[0.04] p-6">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-lg">🔑</span>
-            <h3 className="text-sm font-semibold text-white">Your write token (shown once)</h3>
-          </div>
-          <p className="mb-3 text-xs text-amber-200/80">
-            This is the only time this token is shown. Store it somewhere safe — you&apos;ll need
-            it to let an MCP agent write to this API. If you lose it, rotate a new one from the
-            API detail page.
-          </p>
-          <CodeBlock label="write token" code={result.writeToken} />
-          <div className="mt-4">
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
-              MCP client config
-            </h4>
-            <McpConfigSnippet apiSlug={result.apiSlug} origin={origin} writeToken={result.writeToken} />
-          </div>
-        </div>
+        <TokenRevealCard apiSlug={result.apiSlug} origin={origin} token={result.writeToken} />
       ) : (
         <div className="card p-6 text-sm text-white/55">
           No write token yet. Rotate one from the API detail page whenever you want an AI agent to
