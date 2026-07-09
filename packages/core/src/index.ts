@@ -9,6 +9,7 @@ export * from "./query/build";
 export * from "./auth/token";
 export * from "./repo/apis";
 export * from "./repo/records";
+export * from "./repo/stats";
 export * from "./ingest/pipeline";
 export * from "./spec/types";
 export * from "./spec/export";
