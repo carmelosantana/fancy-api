@@ -10,3 +10,7 @@ export * from "./auth/token";
 export * from "./repo/apis";
 export * from "./repo/records";
 export * from "./ingest/pipeline";
+export * from "./spec/types";
+export * from "./spec/export";
+export * from "./spec/import";
+export * from "./spec/serialize";
