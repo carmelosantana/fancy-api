@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkPassword, sessionValue, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { checkPassword, createSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -15,6 +15,6 @@ export async function POST(req: Request) {
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, sessionValue(), SESSION_COOKIE_OPTIONS);
+  res.cookies.set(SESSION_COOKIE, createSession(), SESSION_COOKIE_OPTIONS);
   return res;
 }
