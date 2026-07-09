@@ -45,9 +45,9 @@ Guardrails for anyone (human or agent) changing Fancy. Full design spec:
 - DB connection resolves via `packages/core/src/paths.ts`'s `resolveDbConfig()`: a remote
   `DATABASE_URL` (+ `DATABASE_AUTH_TOKEN`) wins if it's `libsql://`/`http(s)://`/`ws(s)://`-shaped,
   else falls back to the local file path (`DATABASE_PATH`, default `/data/app.db`).
-- `getDb()` (`packages/core/src/db/client.ts`) picks the client by URL scheme:
-  `@libsql/client/web` (pure HTTP, no native binding — Vercel-safe) for remote URLs, the native
-  `@libsql/client` for `file:`/`:memory:`.
+- `getDb()` (`packages/core/src/db/client.ts`) uses one `@libsql/client` for both file and
+  remote URLs (remote uses the hrana protocol — Vercel-safe). Don't reintroduce the
+  `@libsql/client/web` subpath: the Next standalone tracer drops its file and crash-loops Docker.
 
 ## Before you ship
 - Keep `pnpm test` (unit) and `pnpm e2e` (Playwright) green.

@@ -1,33 +1,28 @@
-import { createClient as createNodeClient } from "@libsql/client";
-import { createClient as createWebClient } from "@libsql/client/web";
+import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
-
-/** Matches a remote libsql/HTTP(S)/WebSocket URL — anything that isn't a local file. */
-const REMOTE_URL_RE = /^(libsql|https?|wss?):\/\//;
 
 /**
  * Open a libsql client + drizzle instance for either storage mode:
  *
- *  - **Remote** (`url` matches `libsql://`, `http(s)://`, `ws(s)://`) — a
- *    self-hosted `sqld` or Turso database. Uses `@libsql/client/web`, a
- *    pure-HTTP client with no native binary, so the bundle stays
- *    serverless-safe (Vercel's ephemeral FS can't hold a native binding
- *    anyway). `authToken` is passed through as-is.
- *  - **Local file** (`file:` / `:memory:`) — unchanged: the native
- *    `@libsql/client`, as today.
+ *  - **Local file** (`file:` / `:memory:`) — the default; native libsql.
+ *  - **Remote** (`libsql://`, `http(s)://`, `ws(s)://`) — a self-hosted `sqld`
+ *    or Turso database, authenticated with `authToken`. The libsql client
+ *    speaks the remote hrana protocol (no native binding involved on the
+ *    query path), so this works on serverless/ephemeral-FS hosts like Vercel.
  *
- * Both branches return the same libsql `Client` shape, so `drizzle-orm/libsql`
- * works identically either way — nothing downstream (query builder, repo,
- * MCP, ingest) needs to know which mode is active.
+ * The one `@libsql/client` handles both — verified against a live `sqld` over
+ * HTTP — so there's no URL-scheme branching and, importantly, no
+ * `@libsql/client/web` subpath (whose file the Next standalone tracer drops,
+ * which crash-loops the Docker image). `authToken` is ignored for file URLs.
+ * Nothing downstream (query builder, repo, MCP, ingest) knows which mode is active.
  */
 export function getDb(url?: string, authToken?: string) {
   const dbUrl = url ?? "file:./data/app.db";
-  if (dbUrl !== ":memory:" && REMOTE_URL_RE.test(dbUrl)) {
-    const client = createWebClient({ url: dbUrl, authToken });
-    return drizzle(client, { schema });
-  }
-  const client = createNodeClient({ url: dbUrl === ":memory:" ? ":memory:" : dbUrl });
+  const client = createClient({
+    url: dbUrl === ":memory:" ? ":memory:" : dbUrl,
+    ...(authToken ? { authToken } : {}),
+  });
   return drizzle(client, { schema });
 }
 
