@@ -28,23 +28,40 @@ export interface CollectionData {
   schema: ColumnSchema[];
 }
 
-function Sparkline({ data }: { data: ApiStats["requestsByDay"] }) {
-  const last7 = data.slice(-7);
-  if (last7.length === 0) {
-    return <p className="text-xs text-white/30">No requests logged yet.</p>;
+/** Always renders a fixed 7-slot window (today + 6 prior days, zero-filled)
+ * so a single day of traffic doesn't stretch into one giant bar. */
+function lastSevenDays(data: ApiStats["requestsByDay"]): { date: string; count: number }[] {
+  const byDate = new Map(data.map((d) => [d.date, d.count]));
+  const days: { date: string; count: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    const date = d.toISOString().slice(0, 10);
+    days.push({ date, count: byDate.get(date) ?? 0 });
   }
-  const max = Math.max(1, ...last7.map((d) => d.count));
+  return days;
+}
+
+function Sparkline({ data }: { data: ApiStats["requestsByDay"] }) {
+  const days = lastSevenDays(data);
+  const max = Math.max(1, ...days.map((d) => d.count));
+  const hasAny = days.some((d) => d.count > 0);
   return (
-    <div className="flex h-16 items-end gap-1.5">
-      {last7.map((d) => (
-        <div key={d.date} className="flex flex-1 flex-col items-center gap-1" title={`${d.date}: ${d.count}`}>
-          <div
-            className="w-full rounded-t bg-gradient-to-t from-brand-violet to-brand-cyan transition-all"
-            style={{ height: `${Math.max(4, (d.count / max) * 48)}px` }}
-          />
-          <span className="text-[9px] text-white/25">{d.date.slice(5)}</span>
-        </div>
-      ))}
+    <div>
+      <div className="mx-auto flex h-16 max-w-xs items-end gap-1.5">
+        {days.map((d) => (
+          <div key={d.date} className="flex flex-1 flex-col items-center gap-1" title={`${d.date}: ${d.count}`}>
+            <div
+              className={`w-full rounded-t transition-all ${
+                d.count > 0 ? "bg-gradient-to-t from-brand-violet to-brand-cyan" : "bg-white/[0.06]"
+              }`}
+              style={{ height: `${d.count > 0 ? Math.max(4, (d.count / max) * 48) : 3}px` }}
+            />
+            <span className="text-[9px] text-white/25">{d.date.slice(5)}</span>
+          </div>
+        ))}
+      </div>
+      {!hasAny ? <p className="mt-1 text-center text-[10px] text-white/25">No requests in the last 7 days.</p> : null}
     </div>
   );
 }
