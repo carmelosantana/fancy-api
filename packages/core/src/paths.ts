@@ -40,11 +40,18 @@ export function findRepoRoot(startDir: string = process.cwd()): string {
  * See module docblock for the resolution rules.
  */
 export function resolveDbUrl(startDir?: string): string {
-  const repoRoot = findRepoRoot(startDir);
   const envPath = process.env.DATABASE_PATH;
+  // An absolute DATABASE_PATH is used as-is and never needs a workspace
+  // root, so skip the findRepoRoot() walk entirely in that case. This
+  // matters for containerized/standalone deployments (e.g. the Docker
+  // image), which ship only the traced output — no pnpm-workspace.yaml
+  // anywhere above cwd — and always set an absolute DATABASE_PATH.
+  if (envPath && isAbsolute(envPath)) {
+    return `file:${envPath}`;
+  }
+  const repoRoot = findRepoRoot(startDir);
   if (envPath) {
-    const abs = isAbsolute(envPath) ? envPath : resolve(repoRoot, envPath);
-    return `file:${abs}`;
+    return `file:${resolve(repoRoot, envPath)}`;
   }
   return `file:${join(repoRoot, "data", "app.db")}`;
 }
