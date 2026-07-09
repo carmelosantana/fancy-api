@@ -310,13 +310,13 @@ Run `make` (or `make help`) to print this from the terminal.
   real app: creating an api from a pasted table, the query playground, MCP
   round-trips, and more.
 
+## Contributing
+
+Design constraints and the decisions behind them live in [AGENTS.md](AGENTS.md) —
+read it before making changes (~~human~~ or agent).
+
 ## License
 
 [AGPL-3.0](LICENSE). If you run a modified version of Fancy as a network
 service, the AGPL requires you to make your modified source available to
 users of that service.
-
-## Design spec
-
-The full design spec — goals, decisions, and the v1/roadmap split — lives at
-[`docs/superpowers/specs/2026-07-08-declarative-api-platform-design.md`](docs/superpowers/specs/2026-07-08-declarative-api-platform-design.md).
