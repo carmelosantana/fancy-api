@@ -6,3 +6,4 @@ export * from "./ingest/infer";
 export * from "./ingest/parse";
 export * from "./query/params";
 export * from "./query/build";
+export * from "./auth/token";
