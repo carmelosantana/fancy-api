@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { getApiBySlug, getCollection, requestLog, type ApiRow, type CollectionRow, type Db } from "@app/core";
 
 /**
@@ -63,9 +64,17 @@ export async function resolveCollection(
 }
 
 /**
- * Fire-and-forget request logging. Never awaited by callers, and swallows
- * its own errors, so a logging failure can never turn into a failed
- * response for the actual request.
+ * Best-effort request logging. Never awaited by callers, and swallows its
+ * own errors, so a logging failure can never turn into a failed response
+ * for the actual request.
+ *
+ * The write itself runs inside Next's `after()`, which schedules it to run
+ * once the response has been sent. On a long-lived server (localhost,
+ * Docker) a bare fire-and-forget `.insert()` would work fine, but on
+ * Vercel the serverless function suspends the instant the response is
+ * returned — a still-pending write to a *remote* libsql DB would simply be
+ * dropped. `after()` keeps the function alive long enough for the insert
+ * to land, in both modes, without delaying the response.
  */
 export function logRequest(
   database: Db,
@@ -74,10 +83,12 @@ export function logRequest(
   path: string,
   status: number,
 ): void {
-  database
-    .insert(requestLog)
-    .values({ apiId, ts: Date.now(), method, path, status })
-    .catch(() => {
-      // best-effort only
-    });
+  after(() => {
+    return database
+      .insert(requestLog)
+      .values({ apiId, ts: Date.now(), method, path, status })
+      .catch(() => {
+        // best-effort only
+      });
+  });
 }

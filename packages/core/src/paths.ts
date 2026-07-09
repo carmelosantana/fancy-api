@@ -56,6 +56,34 @@ export function resolveDbUrl(startDir?: string): string {
   return `file:${join(repoRoot, "data", "app.db")}`;
 }
 
+/** Matches a remote libsql/HTTP(S)/WebSocket URL — anything that isn't a local file. */
+const REMOTE_URL_RE = /^(libsql|https?|wss?):\/\//;
+
+/**
+ * Resolve the DB connection config shared by the web app and the seed
+ * script: either a **remote** libsql database (Vercel / any ephemeral-FS
+ * host) or the existing **local file** (localhost + Docker).
+ *
+ * Precedence:
+ *  - `DATABASE_URL` set and remote-shaped (`libsql://`, `http(s)://`,
+ *    `ws(s)://`) → remote mode: `{ url: DATABASE_URL, authToken:
+ *    DATABASE_AUTH_TOKEN }`. This is how you point Fancy at a self-hosted
+ *    `sqld` (or Turso) instance — see `docker-compose.sqld.yml` and the
+ *    README's "Deploy on Vercel" section.
+ *  - Otherwise → local file mode, unchanged: `{ url: resolveDbUrl(startDir) }`.
+ *
+ * `DATABASE_PATH` and `DATABASE_URL` are mutually exclusive in practice: set
+ * `DATABASE_URL` for remote, leave it unset (optionally set `DATABASE_PATH`)
+ * for local file.
+ */
+export function resolveDbConfig(startDir?: string): { url: string; authToken?: string } {
+  const remoteUrl = process.env.DATABASE_URL;
+  if (remoteUrl && REMOTE_URL_RE.test(remoteUrl)) {
+    return { url: remoteUrl, authToken: process.env.DATABASE_AUTH_TOKEN };
+  }
+  return { url: resolveDbUrl(startDir) };
+}
+
 /**
  * Create the parent directory of a `file:` DB URL if it doesn't exist yet
  * (sqlite/libsql won't create it for you). No-op for `:memory:` or non-file

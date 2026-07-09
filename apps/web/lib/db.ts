@@ -1,4 +1,4 @@
-import { getDb, ensureSchema, ensureDbDir, resolveDbUrl, type Db } from "@app/core";
+import { getDb, ensureSchema, ensureDbDir, resolveDbConfig, type Db } from "@app/core";
 
 /**
  * Module-singleton database connection + one-time schema bootstrap.
@@ -7,11 +7,12 @@ import { getDb, ensureSchema, ensureDbDir, resolveDbUrl, type Db } from "@app/co
  * handful of `CREATE TABLE IF NOT EXISTS` statements — safe to re-run, but
  * pointless to repeat on every request, so we memoize the promise.
  *
- * The DB path itself is resolved by `@app/core`'s `resolveDbUrl()` — an
- * absolute, repo-root-relative path (`<repoRoot>/data/app.db` by default, or
- * `DATABASE_PATH` if set) shared verbatim with `scripts/seed.ts`, so both
- * processes always agree on which sqlite file they're touching regardless of
- * their respective working directories. See `packages/core/src/paths.ts`.
+ * The connection itself is resolved by `@app/core`'s `resolveDbConfig()`:
+ * a **remote** libsql URL (`DATABASE_URL` + `DATABASE_AUTH_TOKEN`) for
+ * ephemeral-FS hosts like Vercel, or the existing **local file** path
+ * (`DATABASE_PATH`, default `<repoRoot>/data/app.db`) for localhost/Docker.
+ * `scripts/seed.ts` calls the exact same resolver, so both processes always
+ * agree on which database they're touching. See `packages/core/src/paths.ts`.
  */
 
 let instance: Db | null = null;
@@ -19,9 +20,9 @@ let ready: Promise<void> | null = null;
 
 export async function db(): Promise<Db> {
   if (!instance) {
-    const url = resolveDbUrl();
+    const { url, authToken } = resolveDbConfig();
     ensureDbDir(url);
-    instance = getDb(url);
+    instance = getDb(url, authToken);
   }
   if (!ready) {
     ready = ensureSchema(instance);
