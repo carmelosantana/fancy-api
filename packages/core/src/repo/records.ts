@@ -79,6 +79,17 @@ export interface ListRecordsOpts {
   offset?: number;
 }
 
+/**
+ * Hard ceiling applied to any `listRecords` call regardless of caller. This
+ * is a sanity backstop against a literally unbounded/pathological `limit`
+ * (e.g. `Number.MAX_SAFE_INTEGER`) reaching the database — trusted internal
+ * callers that need a large page (`exportApi`'s `EXPORT_PAGE_SIZE` of
+ * 10,000) still fit comfortably under it. Untrusted callers (the MCP
+ * `list_records` tool) apply their own, much tighter cap on top of this one
+ * — see `mcp/tools.ts`.
+ */
+const MAX_REPO_LIMIT = 10_000;
+
 export async function listRecords(
   db: Db,
   collectionId: number,
@@ -97,7 +108,9 @@ export async function listRecords(
     .orderBy(asc(records.seq))
     .$dynamic();
 
-  if (opts.limit !== undefined) query = query.limit(opts.limit);
+  if (opts.limit !== undefined) {
+    query = query.limit(Math.min(Math.max(opts.limit, 0), MAX_REPO_LIMIT));
+  }
   if (opts.offset !== undefined) query = query.offset(opts.offset);
 
   const rows = await query;

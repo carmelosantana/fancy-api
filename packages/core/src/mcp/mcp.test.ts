@@ -210,6 +210,43 @@ describe("mcp tool handlers", () => {
     expect(deleted.deleted).toBe(true);
   });
 
+  test("list_records caps the page size at 100 regardless of the requested limit", async () => {
+    const insertManyTool = findTool("insert_records");
+    const records = Array.from({ length: 150 }, (_, i) => ({ title: `Book ${i}`, year: 2000 + i }));
+    await insertManyTool.handler(
+      db,
+      { apiSlug: "books", collection: "items", records },
+      { token: writeToken },
+    );
+
+    const listTool = findTool("list_records");
+
+    // An agent asking for way more than the cap only ever gets `MAX_LIST_LIMIT` rows.
+    const uncapped = (await listTool.handler(
+      db,
+      { apiSlug: "books", collection: "items", limit: 100_000 },
+      {},
+    )) as { data: Record<string, unknown>[]; total: number };
+    expect(uncapped.total).toBe(150);
+    expect(uncapped.data).toHaveLength(100);
+
+    // No `limit` at all falls back to the same default the REST layer uses (25).
+    const defaulted = (await listTool.handler(
+      db,
+      { apiSlug: "books", collection: "items" },
+      {},
+    )) as { data: Record<string, unknown>[]; total: number };
+    expect(defaulted.data).toHaveLength(25);
+
+    // A limit within the cap is honored as-is.
+    const withinCap = (await listTool.handler(
+      db,
+      { apiSlug: "books", collection: "items", limit: 40 },
+      {},
+    )) as { data: Record<string, unknown>[]; total: number };
+    expect(withinCap.data).toHaveLength(40);
+  });
+
   test("all tool input schemas parse a minimal valid payload", () => {
     const definitions = getToolDefinitions();
     expect(definitions).toHaveLength(7);

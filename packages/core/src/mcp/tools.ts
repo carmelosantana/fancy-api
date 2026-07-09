@@ -44,9 +44,22 @@ export interface ListRecordsArgs {
   offset?: number;
 }
 
+// `list_records` requires no write token, so an unbounded `limit` would let
+// any MCP client page through an entire (possibly huge) collection in one
+// call. Mirrors the REST layer's cap (`query/params.ts`'s DEFAULT_LIMIT /
+// MAX_LIMIT of 25 / 100).
+const DEFAULT_LIST_LIMIT = 25;
+const MAX_LIST_LIMIT = 100;
+
+function clampListLimit(limit: number | undefined): number {
+  if (limit === undefined || !Number.isFinite(limit) || limit <= 0) return DEFAULT_LIST_LIMIT;
+  return Math.min(Math.floor(limit), MAX_LIST_LIMIT);
+}
+
 export async function listRecords(db: Db, args: ListRecordsArgs) {
   const { collection } = await resolveCollection(db, args.apiSlug, args.collection);
-  return repoListRecords(db, collection.id, { limit: args.limit, offset: args.offset });
+  const limit = clampListLimit(args.limit);
+  return repoListRecords(db, collection.id, { limit, offset: args.offset });
 }
 
 export interface GetRecordArgs {

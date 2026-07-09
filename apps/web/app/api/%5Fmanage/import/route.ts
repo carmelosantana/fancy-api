@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { parseSpec, importApi } from "@app/core";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { RESERVED_API_SLUGS } from "@/lib/reserved";
+import { validateApiSlug, validateCollectionSlug } from "@/lib/reserved";
 
 /**
  * Body is the raw spec document text (YAML, or JSON — JSON is valid YAML so
@@ -25,8 +25,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }
 
-  if (RESERVED_API_SLUGS.has(spec.slug)) {
-    return NextResponse.json({ error: `Reserved api slug: ${spec.slug}` }, { status: 400 });
+  const apiSlugError = validateApiSlug(spec.slug);
+  if (apiSlugError) {
+    return NextResponse.json({ error: apiSlugError }, { status: 400 });
+  }
+
+  for (const collection of spec.collections) {
+    const collectionSlugError = validateCollectionSlug(collection.slug);
+    if (collectionSlugError) {
+      return NextResponse.json(
+        { error: `${collectionSlugError} (collection: ${collection.slug})` },
+        { status: 400 },
+      );
+    }
   }
 
   const database = await db();

@@ -11,7 +11,7 @@ import {
 } from "@app/core";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { RESERVED_API_SLUGS, RESERVED_COLLECTION_SLUGS } from "@/lib/reserved";
+import { validateApiSlug, validateCollectionSlug } from "@/lib/reserved";
 
 interface CreateApiBody {
   apiSlug?: unknown;
@@ -85,22 +85,20 @@ export async function POST(req: Request) {
   }
 
   const apiSlug = typeof body.apiSlug === "string" ? body.apiSlug.trim() : "";
-  if (!apiSlug) {
-    return NextResponse.json({ error: "apiSlug is required" }, { status: 400 });
-  }
-  if (RESERVED_API_SLUGS.has(apiSlug)) {
-    return NextResponse.json({ error: `Reserved api slug: ${apiSlug}` }, { status: 400 });
+  const apiSlugError = validateApiSlug(apiSlug);
+  if (apiSlugError) {
+    return NextResponse.json({ error: apiSlugError }, { status: 400 });
   }
 
   const collectionSlug =
     typeof body.collectionSlug === "string" && body.collectionSlug.trim()
       ? body.collectionSlug.trim()
       : undefined;
-  if (collectionSlug && RESERVED_COLLECTION_SLUGS.has(collectionSlug)) {
-    return NextResponse.json(
-      { error: `Reserved collection slug: ${collectionSlug}` },
-      { status: 400 },
-    );
+  if (collectionSlug) {
+    const collectionSlugError = validateCollectionSlug(collectionSlug);
+    if (collectionSlugError) {
+      return NextResponse.json({ error: collectionSlugError }, { status: 400 });
+    }
   }
 
   let rows = normalizeRows(body.rows);
