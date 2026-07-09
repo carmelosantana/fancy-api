@@ -110,6 +110,37 @@ describe("parseQuery + runQuery", () => {
     expect(parseQuery(new URLSearchParams("limit=500"), schema).limit).toBe(100);
   });
 
+  test("sort=random sets the random flag and does not add a field sort", () => {
+    const spec = parseQuery(new URLSearchParams("sort=random"), schema);
+    expect(spec.random).toBe(true);
+    expect(spec.sort).toHaveLength(0);
+  });
+
+  test("sort=-random is also recognised as random", () => {
+    expect(parseQuery(new URLSearchParams("sort=-random"), schema).random).toBe(true);
+  });
+
+  test("sort=random,-year keeps the field sort but random takes precedence", () => {
+    const spec = parseQuery(new URLSearchParams("sort=random,-year"), schema);
+    expect(spec.random).toBe(true);
+    expect(spec.sort).toEqual([{ field: "year", dir: "desc" }]);
+  });
+
+  test("sort=random returns the full set without dropping rows", async () => {
+    const spec = parseQuery(new URLSearchParams("sort=random&limit=100"), schema);
+    const { data, total } = await runQuery(db, COLLECTION_ID, spec, schema);
+    expect(total).toBe(6);
+    expect(data).toHaveLength(6);
+    expect(new Set(data.map((r) => r.text))).toEqual(new Set(quotes.map((q) => q.text)));
+  });
+
+  test("sort=random&limit=1 returns exactly one record", async () => {
+    const spec = parseQuery(new URLSearchParams("sort=random&limit=1"), schema);
+    const { data } = await runQuery(db, COLLECTION_ID, spec, schema);
+    expect(data).toHaveLength(1);
+    expect(quotes.map((q) => q.text)).toContain(data[0]?.text);
+  });
+
   test("q free-text search matches across string columns", async () => {
     const spec = parseQuery(new URLSearchParams("q=Analytical"), schema);
     const { data, total } = await runQuery(db, COLLECTION_ID, spec, schema);

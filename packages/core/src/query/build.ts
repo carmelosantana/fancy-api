@@ -106,7 +106,11 @@ export async function runQuery(
 
   let orderSql = "ORDER BY seq ASC";
   const orderArgs: SqlArg[] = [];
-  if (spec.sort.length > 0) {
+  if (spec.random) {
+    // `sort=random` — a fresh random ordering per request. Takes precedence over
+    // any field sort (handy for "one random record" via ?sort=random&limit=1).
+    orderSql = "ORDER BY RANDOM()";
+  } else if (spec.sort.length > 0) {
     const parts = spec.sort.map((s) => {
       orderArgs.push(s.field);
       return `${JSON_PATH_EXPR} ${s.dir === "desc" ? "DESC" : "ASC"}`;

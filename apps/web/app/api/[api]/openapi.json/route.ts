@@ -71,7 +71,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ api: str
             name: "sort",
             in: "query",
             schema: { type: "string" },
-            description: "Comma-separated field names; prefix a field with - for descending order.",
+            description: "Comma-separated field names; prefix a field with - for descending order. Use `random` for a random ordering (e.g. sort=random&limit=1 for one random record).",
           },
           { name: "limit", in: "query", schema: { type: "integer", default: 25, maximum: 100, minimum: 1 } },
           { name: "offset", in: "query", schema: { type: "integer", default: 0, minimum: 0 } },

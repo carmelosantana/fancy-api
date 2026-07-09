@@ -11,6 +11,8 @@ export interface Filter {
 export interface QuerySpec {
   filters: Filter[];
   sort: { field: string; dir: "asc" | "desc" }[];
+  /** `sort=random` requests a random ordering (ORDER BY RANDOM()); takes precedence over `sort`. */
+  random?: boolean;
   limit: number;
   offset: number;
   q?: string;
@@ -52,10 +54,20 @@ export function parseQuery(params: URLSearchParams, schema: ColumnSchema[]): Que
 
   const sortParam = params.get("sort");
   if (sortParam) {
-    spec.sort = sortParam
+    const segments = sortParam
       .split(",")
       .map((s) => s.trim())
-      .filter(Boolean)
+      .filter(Boolean);
+
+    // `random` (optionally with a leading `-`) requests a random ordering. It is
+    // not a schema field, so recognise it before the field-name filter drops it.
+    const isRandom = (s: string) => s.replace(/^-/, "").toLowerCase() === "random";
+    if (segments.some(isRandom)) {
+      spec.random = true;
+    }
+
+    spec.sort = segments
+      .filter((s) => !isRandom(s))
       .map((s) =>
         s.startsWith("-")
           ? { field: s.slice(1), dir: "desc" as const }
