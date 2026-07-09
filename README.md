@@ -16,9 +16,27 @@ integration code required. Self-hostable with one `docker compose up`.
 ![Drizzle ORM](https://img.shields.io/badge/Drizzle-SQLite-informational)
 ![pnpm workspaces](https://img.shields.io/badge/pnpm-workspaces-yellow)
 
+Repo: [github.com/carmelosantana/fancy-api](https://github.com/carmelosantana/fancy-api)
+
 ---
 
-## Quickstart (Docker)
+## Screenshots
+
+**Dashboard** — your APIs, at a glance.
+![Fancy admin dashboard listing APIs with record and request counters](apps/web/public/shots/dashboard.png)
+
+**Create an API** — paste a table, get a schema.
+![Create-an-API form with a pasted table ready to submit](apps/web/public/shots/create.png)
+
+**Instant success** — live endpoints, a write token, ready to use.
+![Success panel showing a freshly created API's live endpoints](apps/web/public/shots/success.png)
+
+**Query playground** — build a filtered request and see the response.
+![Query playground building a filtered request and showing the JSON response](apps/web/public/shots/playground.png)
+
+## Install
+
+### Docker (recommended)
 
 ```bash
 cp .env.example .env
@@ -40,13 +58,18 @@ make logs   # follow the web service
 make down   # stop the stack (data persists in the fancy-data volume)
 ```
 
-## Quickstart (local dev)
+### Local dev
 
 ```bash
 make install   # pnpm install
 make seed      # populate the hello-tony demo against ./data/app.db
 make dev       # next dev on http://localhost:3000
 ```
+
+### Deploying somewhere else
+
+Running Dokploy or Coolify (or anything Docker-based)? See
+[Deploy on Dokploy / Coolify](#deploy-on-dokploy--coolify) below.
 
 ## The four ways to create an API
 
@@ -175,6 +198,65 @@ Tools exposed:
   on every start; it's idempotent, so this is safe to leave on. Set it to
   `0` for a blank instance.
 
+## Deploy on Dokploy / Coolify
+
+Fancy is a single Docker container plus one sqlite file, which maps cleanly
+onto either platform. Two supported paths:
+
+### Option A — Dockerfile app (recommended)
+
+Point the platform at this repo (or a fork) and let it build `Dockerfile`
+directly — no compose file needed.
+
+1. **App type**: "Dockerfile" / "Application from Git", build context = repo
+   root, dockerfile path = `Dockerfile`.
+2. **Port**: the container listens on `3000` — tell the platform to route to
+   that port.
+3. **Volume — required**: attach a persistent volume mounted at **`/data`**.
+   The sqlite database lives at `/data/app.db`; without a persistent mount
+   at that path, every redeploy starts from an empty database. This is the
+   single most important setting for either platform.
+4. **Environment**: set the variables from the table below.
+5. **Domain**: add a domain and enable HTTPS (see the HTTPS note below).
+
+### Option B — Docker Compose
+
+Point the platform at `docker-compose.yml` and let it deploy the `web`
+service as-is.
+
+1. Set the same environment variables (below) on the `web` service.
+2. Map your domain to service `web`, container port `3000`.
+3. The `ports:` mapping in `docker-compose.yml` (`${WEB_PORT:-3000}:3000`)
+   is there for local `docker compose up` convenience — on a PaaS the
+   platform's reverse proxy talks to the container directly over its
+   internal network, so publishing a host port is usually unnecessary and
+   can conflict with other stacks. The domain/proxy feature is what
+   actually exposes the app publicly; the `fancy-data` named volume still
+   provides the persistent `/data` mount either way.
+
+### Required environment
+
+| Variable | Required | Notes |
+|---|---|---|
+| `ADMIN_PASSWORD` | Yes | The single admin login for `/admin` and the management API. |
+| `SESSION_SECRET` | **Yes, for anything beyond a demo** | HMAC key signing the admin session cookie. Without it the app generates a random secret per process, so **every redeploy logs everyone out**. Generate one with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `SEED_ON_START` | No | `1` (default) seeds the `hello-tony` demo API on start, idempotently. Set `0` for a blank instance. |
+| `DATABASE_PATH` | No | Defaults to `/data/app.db`. Only change this if you also change where the persistent volume is mounted — it must always point inside that volume. |
+
+### HTTPS note
+
+Session cookies are marked `Secure` in production, so the app must be served
+over HTTPS — the browser will silently drop the cookie otherwise and login
+won't persist. Both Dokploy and Coolify default to a Traefik + Let's Encrypt
+domain setup that handles this for you; if you instead hit the app over
+plain HTTP by bare IP, expect to be logged out on every navigation.
+
+### Scaling note
+
+Fancy's storage is a single sqlite file (via libsql), not a networked
+database — run **one instance only**. Multiple replicas pointed at the same
+`/data` volume will corrupt or race on writes.
+
 ## Architecture
 
 Monorepo, two packages:
@@ -220,10 +302,10 @@ Run `make` (or `make help`) to print this from the terminal.
 
 ## Testing
 
-- **Unit** (`make test` / `pnpm test`) — 69 Vitest tests over
-  `packages/core`: ingest/type-inference, the query builder, the record
-  repo, spec import/export, auth token handling, and the MCP tool
-  definitions.
+- **Unit** (`make test` / `pnpm test`) — 99 Vitest tests over
+  `packages/core` and `apps/web`: ingest/type-inference, the query builder,
+  the record repo, spec import/export, auth token handling, and the MCP
+  tool definitions.
 - **End-to-end** (`make e2e` / `pnpm e2e`) — 8 Playwright specs driving the
   real app: creating an api from a pasted table, the query playground, MCP
   round-trips, and more.

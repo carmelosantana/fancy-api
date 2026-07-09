@@ -4,6 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
     image: fancy:latest
+    # `ports:` publishes the app on the host for local `docker compose up`.
+    # On a PaaS (Dokploy/Coolify) the platform's reverse proxy reaches the
+    # container over its internal network via `expose`, so publishing a
+    # host port is usually unnecessary there — see README's "Deploy on
+    # Dokploy / Coolify" section.
+    expose:
+      - "3000"
     ports:
       - "${WEB_PORT:-3000}:3000"
     environment:
