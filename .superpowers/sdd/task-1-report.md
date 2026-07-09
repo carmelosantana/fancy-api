@@ -137,4 +137,4 @@ All verify steps passed, so committed everything with:
 ```
 git add -A && git commit -m "Task 1: pnpm monorepo scaffold + dependencies"
 ```
-Commit hash: see below (filled in after commit).
+Commit hash: `8366ec2`
