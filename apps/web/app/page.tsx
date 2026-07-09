@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { PublicNav } from "@/components/NavBar";
+import { PublicNav, GITHUB_REPO_URL } from "@/components/NavBar";
 import { LiveQuoteWidget } from "@/components/landing/LiveQuoteWidget";
 import { PlaygroundWidget } from "@/components/landing/PlaygroundWidget";
+import { ScreenshotGallery } from "@/components/landing/ScreenshotGallery";
+import { InstallSection } from "@/components/landing/InstallSection";
+import { GitHubIcon } from "@/components/ui/GitHubIcon";
 
 const STEPS = [
   {
@@ -21,7 +24,7 @@ const STEPS = [
   },
 ];
 
-const FEATURES = [
+const FEATURES: { icon: string; title: string; body: string; href?: string }[] = [
   {
     icon: "🔎",
     title: "Real query syntax",
@@ -39,8 +42,9 @@ const FEATURES = [
   },
   {
     icon: "📜",
-    title: "OSS · AGPL",
-    body: "Fully open source. Export your API as a declarative spec and take it anywhere.",
+    title: "Open source (AGPL-3.0)",
+    body: "Fully open source and self-hostable. If Fancy saves you a backend, a star on GitHub goes a long way.",
+    href: GITHUB_REPO_URL,
   },
 ];
 
@@ -103,15 +107,42 @@ export default function Home() {
         <section className="border-t border-white/5 py-20">
           <h2 className="mb-10 text-center text-2xl font-bold text-white">Built for shipping fast</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="card p-5 transition hover:-translate-y-1 hover:shadow-glow">
-                <span className="text-2xl">{f.icon}</span>
-                <h3 className="mt-3 text-sm font-semibold text-white">{f.title}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-white/50">{f.body}</p>
-              </div>
-            ))}
+            {FEATURES.map((f) => {
+              const content = (
+                <>
+                  {f.href ? (
+                    <GitHubIcon className="h-6 w-6 text-white/80" />
+                  ) : (
+                    <span className="text-2xl">{f.icon}</span>
+                  )}
+                  <h3 className="mt-3 text-sm font-semibold text-white">{f.title}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-white/50">{f.body}</p>
+                </>
+              );
+              return f.href ? (
+                <a
+                  key={f.title}
+                  href={f.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="card p-5 transition hover:-translate-y-1 hover:shadow-glow"
+                >
+                  {content}
+                </a>
+              ) : (
+                <div key={f.title} className="card p-5 transition hover:-translate-y-1 hover:shadow-glow">
+                  {content}
+                </div>
+              );
+            })}
           </div>
         </section>
+
+        {/* Screenshots */}
+        <ScreenshotGallery />
+
+        {/* Install */}
+        <InstallSection />
 
         {/* CTA footer */}
         <section className="border-t border-white/5 py-20 text-center">
@@ -125,8 +156,17 @@ export default function Home() {
           </Link>
         </section>
 
-        <footer className="border-t border-white/5 py-8 text-center text-xs text-white/30">
-          Fancy — a self-hostable, declarative API platform. Open source under AGPL.
+        <footer className="flex flex-col items-center gap-2 border-t border-white/5 py-8 text-center text-xs text-white/30">
+          <span>Fancy — a self-hostable, declarative API platform. Open source under AGPL-3.0.</span>
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-white/40 transition hover:text-white/70"
+          >
+            <GitHubIcon className="h-3.5 w-3.5" />
+            carmelosantana/fancy-api
+          </a>
         </footer>
       </main>
     </div>

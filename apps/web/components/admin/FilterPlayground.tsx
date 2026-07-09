@@ -176,7 +176,7 @@ export function FilterPlayground({
       </div>
 
       <div className="flex items-center gap-3">
-        <button type="button" onClick={send} disabled={loading} className="btn-primary">
+        <button type="button" onClick={send} disabled={loading} className="btn-primary" data-testid="filter-playground-send">
           {loading ? "Sending…" : "Send ▸"}
         </button>
         {status !== null ? (

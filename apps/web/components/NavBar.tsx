@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { LogoutButton } from "@/components/ui/LogoutButton";
+import { GitHubIcon } from "@/components/ui/GitHubIcon";
+
+export const GITHUB_REPO_URL = "https://github.com/carmelosantana/fancy-api";
 
 export function Logo() {
   return (
@@ -21,12 +24,13 @@ export function PublicNav() {
         <Logo />
         <nav className="flex items-center gap-3">
           <a
-            href="https://github.com"
+            href={GITHUB_REPO_URL}
             target="_blank"
             rel="noreferrer"
-            className="hidden text-sm text-white/60 transition hover:text-white sm:inline"
+            className="badge-pill hidden gap-1.5 text-white/60 transition hover:text-white sm:inline-flex"
           >
-            OSS · AGPL
+            <GitHubIcon className="h-3.5 w-3.5" />
+            ⭐ Star on GitHub
           </a>
           <Link href="/admin" className="btn-primary">
             Open dashboard

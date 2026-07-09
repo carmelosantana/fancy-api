@@ -261,7 +261,7 @@ export function ApiDetailClient({
                 </section>
 
                 {/* Query playground */}
-                <section className="card mt-6 p-6">
+                <section className="card mt-6 p-6" data-testid="query-playground-section">
                   <h2 className="mb-3 text-sm font-semibold text-white">Query playground</h2>
                   <FilterPlayground apiSlug={api.slug} collectionSlug={collection.slug} schema={collection.schema} />
                 </section>
