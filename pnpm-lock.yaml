@@ -23,6 +23,12 @@ importers:
       '@app/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@libsql/client':
+        specifier: ^0.14.0
+        version: 0.14.0
+      libsql:
+        specifier: ^0.4.7
+        version: 0.4.7
       mcp-handler:
         specifier: ^1.0.1
         version: 1.1.0(@modelcontextprotocol/sdk@1.26.0(zod@3.25.76))(next@15.5.20(@playwright/test@1.61.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))

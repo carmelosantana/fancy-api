@@ -1,5 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
-import { hashToken } from "@app/core";
+// Import the specific submodule rather than the `@app/core` barrel: this
+// file is pulled into `middleware.ts`, which Next.js bundles for the Edge
+// runtime. The barrel's `export *` chain reaches `db/client.ts` ->
+// `@libsql/client`, a native module that Edge/webpack can't bundle. Going
+// straight to `auth/token` (crypto-only, no db dependency) keeps that whole
+// subtree out of the middleware bundle.
+import { hashToken } from "@app/core/src/auth/token";
 
 /**
  * Single-admin session auth. There is exactly one password (`ADMIN_PASSWORD`,
