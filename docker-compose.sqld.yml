@@ -1,0 +1,57 @@
+# Self-hosted libsql server (`sqld`) — the remote database for Fancy's
+# "Vercel / ephemeral-FS" deploy mode. Run this on a small VPS (or any
+# always-on Docker host); it's a single lightweight process, not a cluster.
+#
+# Quick start:
+#   docker compose -f docker-compose.sqld.yml up -d
+#
+# Then point Fancy at it (see README's "Deploy on Vercel" section):
+#   DATABASE_URL=http://<this-host>:8899          (dev, no auth — see below)
+#   DATABASE_URL=libsql://<this-host>              (behind HTTPS + a token)
+#
+# This file runs sqld in its default **no-auth dev mode** — fine for a
+# private network, a quick local test, or while you're wiring things up.
+# Before exposing it on the public internet, enable the JWT auth below and
+# put it behind a TLS-terminating reverse proxy (Caddy/Traefik/nginx) so the
+# client can use `libsql://` (TLS) instead of `http://`.
+#
+# The actual sqlite file sqld manages lives at `/var/lib/sqld/iku.db` inside
+# the container (its default `--db-path`, relative to its `/var/lib/sqld`
+# working directory) — persisted by the `sqld-data` named volume below,
+# mounted at that same directory. That volume is what you back up, not a
+# path on the host.
+
+services:
+  sqld:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    container_name: fancy-sqld
+    # Host port to publish sqld's HTTP API on. Using 8899 here (not the
+    # image's internal default of 8080) since 8080 is already in use on
+    # this box for other services — change freely, it's just the host side.
+    ports:
+      - "${SQLD_PORT:-8899}:8080"
+    environment:
+      SQLD_NODE: primary
+      # --- Production auth (uncomment to require a JWT on every request) ---
+      # sqld verifies an Ed25519-signed JWT on every Hrana/HTTP request when
+      # given a decoding (public) key. Generate an Ed25519 keypair (e.g. with
+      # `openssl genpkey -algorithm ed25519`), set the *public* key here, and
+      # mint tokens with the *private* key (see the libsql-server
+      # "authentication" docs for the exact token shape/claims). A minted
+      # token becomes the client's `DATABASE_AUTH_TOKEN`.
+      # SQLD_AUTH_JWT_KEY: ${SQLD_AUTH_JWT_KEY:-}
+    volumes:
+      # Persistent database directory — sqld's actual storage lives here.
+      # This is the volume to back up; it survives `docker compose down`
+      # (but not `down -v`).
+      - sqld-data:/var/lib/sqld
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  sqld-data:

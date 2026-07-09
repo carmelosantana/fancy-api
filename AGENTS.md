@@ -21,8 +21,11 @@ Guardrails for anyone (human or agent) changing Fancy. Full design spec:
 
 ## Storage & query
 - Generic JSON store: `apis → collections → records(data JSON)` + `request_log`.
-- **SQLite only today** (libsql); Postgres is roadmap (query layer uses SQLite `json_extract`).
-  Single instance only — no horizontal scaling against one DB.
+- **SQLite only today** (libsql) — via **local file** (`DATABASE_PATH`, Docker/localhost) **or
+  remote libsql** (`DATABASE_URL` + `DATABASE_AUTH_TOKEN`, e.g. self-hosted sqld / Turso, for
+  Vercel/ephemeral-FS hosts). Same engine/protocol either way; `resolveDbConfig()`
+  (`packages/core/src/paths.ts`) picks one. Postgres still roadmap (query layer uses SQLite
+  `json_extract`). Single instance only — no horizontal scaling against one DB.
 - List envelope is `{ data, meta:{ total, limit, offset } }`. `limit` default 25, max 100.
 - Query ops are suffix-style: `field`, `field_gt|gte|lt|lte|ne|contains|in`, plus `sort`
   (`-field` desc, `random`), `offset`, `q`.
@@ -39,7 +42,12 @@ Guardrails for anyone (human or agent) changing Fancy. Full design spec:
   `serverExternalPackages: ["@libsql/client","libsql"]`, `transpilePackages: ["@app/core"]`.
 - Management routes live on disk at `app/api/%5Fmanage/…` (escaped underscore) but serve at
   `/api/_manage/…` — Next treats a literal `_manage` folder as private.
-- DB path resolves via `packages/core/src/paths.ts` (`DATABASE_PATH`, default `/data/app.db`).
+- DB connection resolves via `packages/core/src/paths.ts`'s `resolveDbConfig()`: a remote
+  `DATABASE_URL` (+ `DATABASE_AUTH_TOKEN`) wins if it's `libsql://`/`http(s)://`/`ws(s)://`-shaped,
+  else falls back to the local file path (`DATABASE_PATH`, default `/data/app.db`).
+- `getDb()` (`packages/core/src/db/client.ts`) picks the client by URL scheme:
+  `@libsql/client/web` (pure HTTP, no native binding — Vercel-safe) for remote URLs, the native
+  `@libsql/client` for `file:`/`:memory:`.
 
 ## Before you ship
 - Keep `pnpm test` (unit) and `pnpm e2e` (Playwright) green.

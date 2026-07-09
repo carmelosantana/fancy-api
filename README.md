@@ -257,6 +257,87 @@ Fancy's storage is a single sqlite file (via libsql), not a networked
 database — run **one instance only**. Multiple replicas pointed at the same
 `/data` volume will corrupt or race on writes.
 
+## Deploy on Vercel (with self-hosted libsql)
+
+Vercel's filesystem is ephemeral (no persistent `/data` volume), so the
+Docker/local-file mode above doesn't apply there. Instead, Fancy can connect
+to a **remote libsql database** — the same SQLite engine, just reached over
+HTTP(S) instead of a local file. The query builder, repo, ingest, and MCP
+layers don't change at all; only the connection does.
+
+### 1. Run a libsql server somewhere reachable over HTTPS
+
+`sqld` (the libsql server) is a single lightweight process — self-host it on
+any small always-on VPS (or use a hosted libsql provider like Turso). This
+repo includes `docker-compose.sqld.yml` for the self-hosted route:
+
+```bash
+docker compose -f docker-compose.sqld.yml up -d
+```
+
+By default it listens with **no auth** (fine for a private network or while
+wiring things up) on the host port `8899`. For a production deploy, put it
+behind a TLS-terminating reverse proxy and enable JWT auth — see the
+commented `SQLD_AUTH_JWT_KEY` guidance in that compose file — so you can
+connect with a `libsql://` URL + bearer token instead of plain `http://`.
+
+### 2. Configure the Vercel project
+
+This is a pnpm monorepo (`apps/web` + `packages/core`). The simplest setup:
+
+- In the Vercel project's **Settings → General → Root Directory**, set it to
+  **`apps/web`**. Vercel auto-detects Next.js there and installs the pnpm
+  workspace from the repo root on its own (it walks up to find
+  `pnpm-workspace.yaml`), so `packages/core` is resolved correctly without
+  any extra build-command overrides.
+- If you'd rather not use the Root Directory setting (e.g. you want to keep
+  deploying from the repo root for some other reason), a minimal
+  `vercel.json` at the repo root with `"buildCommand": "pnpm --filter web
+  build"` and `"outputDirectory": "apps/web/.next"` (plus `"installCommand":
+  "pnpm install"`) achieves the same thing — but Root Directory is less to
+  maintain, so this repo doesn't ship one.
+
+### 3. Required environment variables
+
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | The remote libsql URL, e.g. `libsql://your-host` (or `http://your-host:8899` for the no-auth dev setup above). |
+| `DATABASE_AUTH_TOKEN` | The JWT/token for that database. Leave unset for the no-auth dev setup. |
+| `ADMIN_PASSWORD` | Same as the Docker deploy — the single admin login. |
+| `SESSION_SECRET` | Same as the Docker deploy — set this or every redeploy invalidates sessions. |
+
+Vercel serves everything over HTTPS by default, so the `Secure` session
+cookie (see AGENTS.md) works out of the box — no HTTPS caveat to manage here
+like the bare-IP case in the Dokploy/Coolify section above.
+
+### 4. Seed once
+
+Unlike the Docker image (which can seed on every container start), a
+Vercel deployment has no "on start" hook against a remote DB. Seed it once
+from your machine, pointed at the same database:
+
+```bash
+DATABASE_URL=libsql://your-host DATABASE_AUTH_TOKEN=your-token pnpm seed
+```
+
+### Honesty check / things to confirm on your own deploy
+
+- The **local-file mode is completely unaffected** by any of this — nothing
+  above changes `DATABASE_PATH` behavior, Docker, or `make up`.
+- `next.config.ts`'s `output: "standalone"` is harmless on Vercel — Vercel
+  builds Next.js natively and ignores `standalone` output, so no config
+  change is needed there.
+- `middleware.ts` runs on the Node.js runtime (`runtime: "nodejs"`) because
+  `lib/auth.ts` uses `node:crypto`, which the default Edge middleware
+  runtime doesn't support. This *should* work unmodified on Vercel, but
+  Node-runtime middleware has had a narrower rollout than Edge middleware —
+  **this hasn't been verified against an actual Vercel deployment**, so
+  confirm `/admin` and `/api/_manage/*` auth still gate correctly on your
+  first deploy.
+- No Vercel deploy was performed as part of this change — the config above
+  is written correct-by-construction from Vercel's documented monorepo
+  behavior, not verified against a live deployment.
+
 ## Architecture
 
 Monorepo, two packages:
@@ -270,10 +351,16 @@ Monorepo, two packages:
   the public read API, the management API, and the MCP HTTP route.
 
 **Storage today is SQLite** (via `drizzle-orm/libsql` + `@libsql/client`) —
-the query layer is built directly on SQLite's `json_extract`. **Postgres is
-a roadmap item**, not a working option yet (see `docker-compose.yml`'s
-commented-out `db` service and the design spec below); switching backends
-will need query-layer changes, not just a connection string.
+the query layer is built directly on SQLite's `json_extract`. It runs either
+as a **local file** (`DATABASE_PATH`, the Docker/localhost default) or
+against a **remote libsql database** (`DATABASE_URL` + `DATABASE_AUTH_TOKEN`
+— a self-hosted `sqld` or Turso, for ephemeral-FS hosts like Vercel; see
+[Deploy on Vercel](#deploy-on-vercel-with-self-hosted-libsql) above) — it's
+the same engine and protocol either way, so nothing downstream changes.
+**Postgres is a roadmap item**, not a working option yet (see
+`docker-compose.yml`'s commented-out `db` service and the design spec
+below); switching backends will need query-layer changes, not just a
+connection string.
 
 The declarative file (YAML/JSON) is a **portable import/export** format for
 moving an api's shape + data in and out of Fancy. The database is the
