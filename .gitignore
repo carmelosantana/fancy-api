@@ -10,3 +10,6 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
+
+# internal SDD build logs (not shipped in the public repo)
+.superpowers/
