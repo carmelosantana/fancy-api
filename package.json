@@ -7,11 +7,17 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "vitest run",
     "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build"
+    "build": "pnpm --filter web build",
+    "seed": "tsx scripts/seed.ts",
+    "e2e": "pnpm --filter web exec playwright test"
+  },
+  "dependencies": {
+    "@app/core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
     "vitest": "^3.0.5",
-    "@types/node": "^22.13.1"
+    "@types/node": "^22.13.1",
+    "tsx": "^4.19.2"
   }
 }

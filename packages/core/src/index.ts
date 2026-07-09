@@ -1,5 +1,6 @@
 export const version = "0.1.0";
 
+export * from "./paths";
 export * from "./db/schema";
 export * from "./db/client";
 export * from "./ingest/infer";
@@ -15,6 +16,7 @@ export * from "./spec/types";
 export * from "./spec/export";
 export * from "./spec/import";
 export * from "./spec/serialize";
+export * from "./seed";
 
 // mcp/tools.ts is exported explicitly (not via `export *`): several of its
 // pure handler names (listRecords, insertRecords, updateRecord,

@@ -1,6 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { getDb, ensureSchema, type Db } from "@app/core";
+import { getDb, ensureSchema, ensureDbDir, resolveDbUrl, type Db } from "@app/core";
 
 /**
  * Module-singleton database connection + one-time schema bootstrap.
@@ -8,21 +6,13 @@ import { getDb, ensureSchema, type Db } from "@app/core";
  * `getDb` is cheap (just opens a libsql client), but `ensureSchema` runs a
  * handful of `CREATE TABLE IF NOT EXISTS` statements — safe to re-run, but
  * pointless to repeat on every request, so we memoize the promise.
+ *
+ * The DB path itself is resolved by `@app/core`'s `resolveDbUrl()` — an
+ * absolute, repo-root-relative path (`<repoRoot>/data/app.db` by default, or
+ * `DATABASE_PATH` if set) shared verbatim with `scripts/seed.ts`, so both
+ * processes always agree on which sqlite file they're touching regardless of
+ * their respective working directories. See `packages/core/src/paths.ts`.
  */
-
-function resolveDbUrl(): string {
-  return process.env.DATABASE_PATH ? `file:${process.env.DATABASE_PATH}` : "file:./data/app.db";
-}
-
-function ensureParentDir(url: string): void {
-  if (!url.startsWith("file:")) return;
-  const path = url.slice("file:".length);
-  if (path === ":memory:" || path === "") return;
-  const dir = dirname(path);
-  if (dir && dir !== "." && !existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
 
 let instance: Db | null = null;
 let ready: Promise<void> | null = null;
@@ -30,7 +20,7 @@ let ready: Promise<void> | null = null;
 export async function db(): Promise<Db> {
   if (!instance) {
     const url = resolveDbUrl();
-    ensureParentDir(url);
+    ensureDbDir(url);
     instance = getDb(url);
   }
   if (!ready) {
