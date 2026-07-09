@@ -1,6 +1,12 @@
 import { listCollections, type ColumnSchema } from "@app/core";
 import { db } from "@/lib/db";
-import { corsOptionsResponse, jsonWithCors, resolveApi } from "@/lib/publicApi";
+import {
+  checkReadKey,
+  corsOptionsResponse,
+  jsonWithCors,
+  logRequest,
+  resolveApi,
+} from "@/lib/publicApi";
 
 export async function OPTIONS() {
   return corsOptionsResponse();
@@ -37,14 +43,20 @@ const recordSchema = { type: "object", additionalProperties: true } as const;
 
 export async function GET(req: Request, { params }: { params: Promise<{ api: string }> }) {
   const { api: apiSlug } = await params;
+  const url = new URL(req.url);
   const database = await db();
   const api = await resolveApi(database, apiSlug);
   if (!api) {
     return jsonWithCors({ error: "Api not found" }, { status: 404 });
   }
 
+  const keyError = checkReadKey(req, api);
+  if (keyError) {
+    logRequest(database, api.id, "GET", url.pathname, 401);
+    return keyError;
+  }
+
   const collections = await listCollections(database, api.id);
-  const url = new URL(req.url);
   const serverUrl = `${url.protocol}//${url.host}/api/${api.slug}`;
 
   const paths: Record<string, unknown> = {};
@@ -132,5 +144,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ api: str
     paths,
   };
 
+  logRequest(database, api.id, "GET", url.pathname, 200);
   return jsonWithCors(doc);
 }
