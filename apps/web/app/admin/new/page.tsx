@@ -139,6 +139,7 @@ export default function NewApiPage() {
                     placeholder="Sci-fi Books"
                     value={name}
                     onChange={(e) => onNameChange(e.target.value)}
+                    data-testid="api-name-input"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -151,6 +152,7 @@ export default function NewApiPage() {
                       setSlugTouched(true);
                       setSlug(slugify(e.target.value));
                     }}
+                    data-testid="api-slug-input"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -202,6 +204,7 @@ export default function NewApiPage() {
                     placeholder={SAMPLE_TABLE}
                     value={tableText}
                     onChange={(e) => setTableText(e.target.value)}
+                    data-testid="table-paste-textarea"
                   />
                 </div>
               ) : tab === "upload" ? (
@@ -270,7 +273,13 @@ export default function NewApiPage() {
             ) : null}
 
             <div className="mt-6 flex justify-end">
-              <button type="button" onClick={onSubmit} disabled={!canSubmit || submitting} className="btn-primary px-6 py-2.5">
+              <button
+                type="button"
+                onClick={onSubmit}
+                disabled={!canSubmit || submitting}
+                className="btn-primary px-6 py-2.5"
+                data-testid="create-api-submit"
+              >
                 {submitting ? "Creating…" : "Create API 🚀"}
               </button>
             </div>

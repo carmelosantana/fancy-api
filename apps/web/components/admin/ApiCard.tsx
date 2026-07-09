@@ -23,6 +23,7 @@ export function ApiCard({ api }: { api: ApiCardData }) {
     <Link
       href={`/admin/apis/${api.slug}`}
       className="card group flex flex-col gap-4 p-5 transition hover:-translate-y-1 hover:shadow-glow"
+      data-testid={`api-card-${api.slug}`}
     >
       <div>
         <div className="flex items-center justify-between gap-2">
@@ -43,13 +44,13 @@ export function ApiCard({ api }: { api: ApiCardData }) {
           <div className="text-[10px] uppercase tracking-wide text-white/35">collections</div>
         </div>
         <div>
-          <div className="text-lg font-bold text-white">
+          <div className="text-lg font-bold text-white" data-testid="record-count">
             <StatCounter value={api.totalRecords} />
           </div>
           <div className="text-[10px] uppercase tracking-wide text-white/35">records</div>
         </div>
         <div>
-          <div className="text-lg font-bold text-white">
+          <div className="text-lg font-bold text-white" data-testid="request-count">
             <StatCounter value={api.totalRequests} />
           </div>
           <div className="text-[10px] uppercase tracking-wide text-white/35">requests</div>

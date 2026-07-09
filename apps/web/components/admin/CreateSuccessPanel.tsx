@@ -42,7 +42,7 @@ export function CreateSuccessPanel({ result }: { result: CreateResult }) {
   }
 
   return (
-    <div className="animate-fade-up space-y-6">
+    <div className="animate-fade-up space-y-6" data-testid="create-success-panel">
       <div className="card flex flex-col items-center gap-2 p-8 text-center">
         <span className="text-4xl">🎉</span>
         <h2 className="text-xl font-bold text-white">
@@ -71,6 +71,7 @@ export function CreateSuccessPanel({ result }: { result: CreateResult }) {
             ].map((ep) => (
               <div
                 key={ep.label}
+                data-testid={`endpoint-${ep.label.toLowerCase().replace(/\s+/g, "-")}`}
                 className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
               >
                 <div className="flex min-w-0 items-center gap-2">

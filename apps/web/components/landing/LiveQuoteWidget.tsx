@@ -55,7 +55,7 @@ export function LiveQuoteWidget() {
   }, [fetchQuote]);
 
   return (
-    <div className="card relative min-h-[220px] p-6">
+    <div className="card relative min-h-[220px] p-6" data-testid="live-quote-widget">
       <div className="mb-3 flex items-center justify-between">
         <span className="badge-pill">
           <span className="relative flex h-2 w-2">
@@ -81,7 +81,9 @@ export function LiveQuoteWidget() {
         </div>
       ) : state.status === "ready" ? (
         <blockquote key={JSON.stringify(state.data)} className="animate-fade-up">
-          <p className="text-lg leading-snug text-white">“{pickText(state.data).quote}”</p>
+          <p className="text-lg leading-snug text-white" data-testid="live-quote-text">
+            “{pickText(state.data).quote}”
+          </p>
           {pickText(state.data).author ? (
             <footer className="mt-3 text-sm text-white/50">— {pickText(state.data).author}</footer>
           ) : null}
