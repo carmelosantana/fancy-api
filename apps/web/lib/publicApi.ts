@@ -17,6 +17,9 @@ export function corsOptionsResponse(): Response {
       ...CORS_HEADERS,
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "x-api-key, Content-Type",
+      // Cache the preflight for a day so browsers skip the OPTIONS round-trip
+      // on repeat/keyed cross-origin requests.
+      "Access-Control-Max-Age": "86400",
     },
   });
 }
